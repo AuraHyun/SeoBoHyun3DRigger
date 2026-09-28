@@ -56,19 +56,27 @@ button{font-family:inherit;cursor:pointer}
 .trail::after{content:'';position:absolute;right:-2px;top:-2px;width:6px;height:6px;border-radius:50%;background:#ffffff;box-shadow:0 0 8px 2px rgba(255,255,255,0.9)}
 .trail.mint{background:linear-gradient(90deg, rgba(45,212,191,0) 0%, rgba(45,212,191,0.85) 85%, #2DD4BF 100%)}
 .trail.mint::after{background:#2DD4BF;box-shadow:0 0 8px 2px rgba(45,212,191,0.85)}
+.nav-toggle{display:none}
+.nav-toggle-btn{display:none}
 @media (max-width: 860px){
-  .site-header{flex-wrap:wrap!important;row-gap:10px!important;justify-content:center!important;padding:16px 20px!important}
-  .nav{flex-wrap:wrap!important;justify-content:center!important;gap:12px!important}
-  .nav a{font-size:12px!important}
+  .site-header{padding:16px 20px!important}
+  .nav-toggle-btn{display:flex!important;align-items:center;justify-content:center;width:34px;height:34px;flex-shrink:0;cursor:pointer;order:2}
+  .nav-toggle-btn span{position:relative;display:block;width:20px;height:2px;background:#F2F2F0;border-radius:2px}
+  .nav-toggle-btn span::before,.nav-toggle-btn span::after{content:'';position:absolute;left:0;width:20px;height:2px;background:#F2F2F0;border-radius:2px;transition:transform .2s}
+  .nav-toggle-btn span::before{top:-7px}
+  .nav-toggle-btn span::after{top:7px}
+  .nav{position:absolute!important;top:100%;left:0;right:0;flex-direction:column!important;align-items:stretch!important;gap:0!important;background:#0B0B0D;border-bottom:1px solid #232326;max-height:0;overflow:hidden;transition:max-height .22s ease}
+  .nav-toggle:checked ~ .nav{max-height:420px}
+  .nav a{font-size:15px!important;width:100%;box-sizing:border-box;padding:14px 20px!important;border-top:1px solid #1C1C1F;background:#0B0B0D}
+  .nav a:last-child{margin:10px 20px 16px;width:auto;border-top:none;text-align:center;justify-content:center}
   .sec-pad{padding-left:20px!important;padding-right:20px!important}
-  .hero-pad{padding:120px 20px 64px!important}
+  .hero-pad{padding:110px 20px 64px!important}
   .hero-title{font-size:38px!important}
   .hero-sub{font-size:13px!important;line-height:1.7!important}
   .hero-actions{flex-wrap:wrap!important}
   .wm{display:none!important}
   .about-grid{grid-template-columns:1fr!important;gap:28px!important}
-  .about-stats{flex-wrap:wrap!important;row-gap:16px!important}
-  .about-stats>div{flex-basis:40%!important}
+  .about-stats{display:grid!important;grid-template-columns:repeat(3, minmax(0,1fr))!important;gap:12px!important}
   .skills-svg{display:none!important}
   .skill-row{flex-wrap:wrap!important;row-gap:8px!important}
   .skill-label{width:auto!important}
@@ -90,6 +98,8 @@ button{font-family:inherit;cursor:pointer}
       <span style="font-family: 'Orbit', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.02em; color: #F2F2F0;">Seo Bo Hyun</span>
       <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #2DD4BF; font-family: 'IBM Plex Mono', monospace;">3D RIGGER</span>
     </a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle">
+    <label for="nav-toggle" class="nav-toggle-btn" aria-label="Menu"><span></span></label>
     <nav class="nav" style="display: flex; gap: 40px; align-items: center;">
       <a href="#about" style="font-size: 14px; font-weight: 500; color: #F2F2F0; border-bottom: 2px solid transparent;">About</a>
       <a href="#skills" style="font-size: 14px; font-weight: 500; color: #F2F2F0;">Skills</a>
