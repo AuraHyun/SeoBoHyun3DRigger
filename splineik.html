@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spline IK Tool — Seo Bo Hyun</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbit&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+
+body{margin:0;font-family:'Noto Sans KR',system-ui,sans-serif;background:#0A0A0B;color:#F2F2F0;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+a:hover{opacity:0.68}
+h1,h2,h3{font-family:'Orbit','Noto Sans KR',sans-serif;margin:0}
+button{font-family:inherit;cursor:pointer}
+::selection{background:rgba(45,212,191,0.25)}
+@media (max-width: 860px){
+  .site-header{padding:16px 20px!important}
+  .back-text{display:none!important}
+  .sec-pad{padding:52px 20px 72px!important}
+  .detail-title{font-size:28px!important}
+  .detail-body p{font-size:14px!important}
+  .code-block pre{font-size:11px!important;padding:14px!important}
+  .actions{flex-wrap:wrap!important}
+  .info-grid{grid-template-columns:1fr!important}
+}
+
+</style>
+</head>
+<body>
+<div style="width: 100%; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; background: #0A0A0B;">
+
+  <header class="site-header" style="width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 22px 64px; background: rgba(10,10,11,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid #232326;">
+    <a href="index.html" style="display: flex; align-items: baseline; gap: 9px;">
+      <span style="font-family: 'Orbit', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.02em; color: #F2F2F0;">Seo Bo Hyun</span>
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #2DD4BF; font-family: 'IBM Plex Mono', monospace;">3D RIGGER</span>
+    </a>
+    <a href="index.html" style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #F2F2F0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      <span class="back-text">Back to Portfolio</span>
+    </a>
+  </header>
+
+  <section class="sec-pad" style="width: 100%; box-sizing: border-box; padding: 72px 120px 100px;">
+    <div class="detail-body" style="max-width: 880px; margin: 0 auto;">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #2DD4BF; font-family: 'IBM Plex Mono', monospace;">/ Scripts · 02</span>
+      <h1 class="detail-title" style="font-size: 44px; font-weight: 700; letter-spacing: -0.02em; color: #F2F2F0; margin-top: 14px;">Spline IK Tool</h1>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px;">
+        <span style="font-size: 12px; font-weight: 600; color: #2DD4BF; background: transparent; border: 1px solid #2DD4BF; padding: 5px 12px; border-radius: 999px;">3ds Max</span>
+        <span style="font-size: 12px; font-weight: 600; color: #2DD4BF; background: transparent; border: 1px solid #2DD4BF; padding: 5px 12px; border-radius: 999px;">Max Script</span>
+      </div>
+
+      <a href="https://youtu.be/sD0oOv8bnsc" target="_blank" rel="noopener" style="display: block; position: relative; width: 100%; aspect-ratio: 16 / 9; margin-top: 32px; border: 3px solid #2DD4BF; overflow: hidden; background: #131316;">
+        <img src="https://img.youtube.com/vi/sD0oOv8bnsc/hqdefault.jpg" alt="Spline IK Tool" referrerpolicy="no-referrer" loading="lazy" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 68px; border-radius: 999px; background: rgba(10,10,11,0.65); display: flex; align-items: center; justify-content: center;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#2DD4BF"><path d="M8 5v14l11-7z"></path></svg>
+        </span>
+      </a>
+
+      <h2 style="font-size: 20px; font-weight: 700; color: #F2F2F0; margin-top: 44px;">Overview</h2>
+      <p style="font-size: 16px; line-height: 1.8; color: #B8B9BC; margin-top: 14px;">
+        선택한 IK본을 이용해 IK 컨트롤러를 생성해주는 스크립트입니다. 컨트롤러 수를 수정해 Spline이 되는 정도를 조정할 수 있습니다.
+      </p>
+
+      <h2 style="font-size: 20px; font-weight: 700; color: #F2F2F0; margin-top: 40px;">Tool Info</h2>
+      <div class="info-grid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: 16px; border-top: 1px solid #232326;">
+        <div style="padding: 14px 0; border-bottom: 1px solid #232326;">
+          <div style="font-size: 12px; color: #9A9B9F; text-transform: uppercase; letter-spacing: 0.04em;">Software</div>
+          <div style="font-size: 15px; color: #F2F2F0; margin-top: 4px; font-weight: 500;">3ds Max</div>
+        </div>
+        <div style="padding: 14px 0; border-bottom: 1px solid #232326;">
+          <div style="font-size: 12px; color: #9A9B9F; text-transform: uppercase; letter-spacing: 0.04em;">Language</div>
+          <div style="font-size: 15px; color: #F2F2F0; margin-top: 4px; font-weight: 500;">MaxScript</div>
+        </div>
+      </div>
+
+      <h2 style="font-size: 20px; font-weight: 700; color: #F2F2F0; margin-top: 40px;">Script</h2>
+      <div class="code-block" style="margin-top: 16px; border: 1px solid #232326; background: #0D0D0F; border-radius: 6px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #131316; border-bottom: 1px solid #232326;">
+          <span style="width: 10px; height: 10px; border-radius: 999px; background: #3A3A3E;"></span>
+          <span style="width: 10px; height: 10px; border-radius: 999px; background: #3A3A3E;"></span>
+          <span style="width: 10px; height: 10px; border-radius: 999px; background: #3A3A3E;"></span>
+          <span style="font-size: 12px; color: #9A9B9F; font-family: 'IBM Plex Mono', monospace; margin-left: 6px;">SplineIK.ms</span>
+        </div>
+        <pre style="margin: 0; padding: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.7; color: #D9DADC; white-space: pre; overflow-x: auto;">-- Script coming soon
+-- 스크립트 코드는 준비 중입니다.</pre>
+      </div>
+
+      <div class="actions" style="display: flex; gap: 14px; margin-top: 44px;">
+        <a href="https://youtu.be/sD0oOv8bnsc" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #0A0A0B; background: #2DD4BF; padding: 14px 26px; border-radius: 4px;">
+          Watch on YouTube
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
+        </a>
+        <a href="index.html" style="display: inline-flex; align-items: center; font-size: 15px; font-weight: 600; color: #F2F2F0; background: transparent; border: 1.5px solid #3A3A3E; padding: 14px 26px; border-radius: 4px;">← Back to Portfolio</a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="width: 100%; box-sizing: border-box; padding: 24px 64px; display: flex; align-items: center; justify-content: space-between; background: #0A0A0B; border-top: 1px solid #232326; margin-top: auto;">
+    <span style="font-size: 12px; color: #9A9B9F; font-family: 'IBM Plex Mono', monospace;">© 2026 Seo Bo Hyun. All rights reserved.</span>
+    <a href="index.html" style="font-size: 12px; color: #B8B9BC; font-weight: 500; font-family: 'IBM Plex Mono', monospace;">Back to Portfolio ↑</a>
+  </footer>
+
+</div>
+</body>
+</html>
