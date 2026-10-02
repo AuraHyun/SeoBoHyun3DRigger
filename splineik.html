@@ -86,8 +86,252 @@ button{font-family:inherit;cursor:pointer}
           <span style="width: 10px; height: 10px; border-radius: 999px; background: #3A3A3E;"></span>
           <span style="font-size: 12px; color: #9A9B9F; font-family: 'IBM Plex Mono', monospace; margin-left: 6px;">SplineIK.ms</span>
         </div>
-        <pre style="margin: 0; padding: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.7; color: #D9DADC; white-space: pre; overflow-x: auto;">-- Script coming soon
--- 스크립트 코드는 준비 중입니다.</pre>
+        <pre style="margin: 0; padding: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.7; color: #D9DADC; white-space: pre; overflow-x: auto;">-- Simple Spline IK (2가지 옵션)
+-- Spline IK_B
+
+-- 3ds Max에서 Bone 체인을 0 -&gt; Nub 순서로 클릭하여 선택
+-- (부모-자식 관계가 하나로 이어진 체인, 최소 3개)
+-- 	1) 선택한 본들의 위치를 지나는 임시 커브를 만들고,
+--     그 위에서 일정 간격으로 컨트롤 위치(N개)를 뽑는다
+--	2) 그 위치들로 "컨트롤 커브"를 만들고, 같은 위치에 컨트롤을
+--      만들어서 커브를 컨트롤들에 스킨 바인딩
+--  3) 본 체인의 길이 비율(%)대로 컨트롤 커브 위에 포인트 헬퍼를
+--      Path Constraint로 (본 개수 + 팁 1개)
+--  4) 각 본을 대응하는 포인트에 Position Constraint
+--  5) 각 본은 "다음 포인트"를 바라보도록 LookAt Constraint
+------------------------------------------------------------------------
+(
+	-- 컨트롤 수
+	local numCtrl = 5	
+	local arrBn = selection as array   
+	
+	-- root를 저장할 변수 rootBn을 일단 undefined로 선언
+	local arrBnSorted = #()
+	local rootBn = undefined
+	
+	-- findItem arrBn o.parent == o은 본의 부모는 선택된 목록 안에 없다
+	for o in arrBn where (findItem arrBn o.parent) == 0 do rootBn = o
+	-- 지금 보고 있는 본을 root로 시작
+	local curBn = rootBn
+	-- curBn이 있는 동안(더 이상 다음 본이 없을 때까지) 반복
+	while curBn != undefined do
+	(
+		-- 지금 본을 정렬된 배열 맨 뒤에 추가
+		append arrBnSorted curBn
+		local nextBn = undefined
+		-- for문 이용해서 다음으로 볼 본을 그 자식으로 바꿔서 루프를 계속
+		for c in curBn.children where (findItem arrBn c) &gt; 0 do nextBn = c
+		curBn = nextBn
+	)
+	arrBn = arrBnSorted
+
+	-- 팁(끝) 본을 하나 더 붙여서 마지막 실제 본의 회전 목표점을 확보
+	-- 사용자가 실제로 선택한 본 체인의 마지막 본
+	local lastBn = arrBn[arrBn.count]
+	
+	-- normalize : 벡터의 방향은 그대로 두고 길이만 1로 맞추는 정규화 함수
+	
+	-- Nub 본은 보통 바로 앞 본(마지막 실제 본)이랑 거의 같은 위치에 붙어 있어 오류 발생
+	-- 0에 가까운 벡터를 normalize하면 미세한 부동소수점 오차 때문에 방향이 사실상 랜덤하게 튀어버린다
+	-- Nub은 보통 바로 앞 본과 위치가 거의 같아서(세그먼트 길이 ≈ 0)
+	-- 그 방향을 normalize하면 불안정해진다
+	-- 그래서 그 앞 세그먼트를 대신 사용
+	local prevBn  = arrBn[arrBn.count - 1]
+	local prevBn2 = arrBn[arrBn.count - 2]
+	local tipDir = normalize (prevBn.transform.pos - prevBn2.transform.pos)
+	local tipLen = distance prevBn2.transform.pos prevBn.transform.pos
+	local tipPos = lastBn.transform.pos + tipDir * tipLen
+	
+	local tipBn = BoneSys.createBone lastBn.transform.pos tipPos lastBn.transform.row3
+	tipBn.parent = lastBn
+	tipBn.name = lastBn.name + " Tip"
+	tipBn.width = tipBn.height = lastBn.width
+	
+	-- 배열 끝에 추가
+	append arrBn tipBn
+	
+	-- arrBn에 있는 모든 본(팁 본까지 포함된 상태)의 월드 위치를 순서대로 뽑아서 배열로 만든 것
+	-- arrBn이라는 배열 안에 있는 원소들을 하나씩 꺼내서, 그때마다 o라는 이름에 담아라
+	
+	-- 뒤에 collect &lt;표현식&gt;을 붙이면 
+	-- "매 반복마다 이 표현식의 결과값을 하나씩 모아서,
+	-- 반복이 다 끝나면 그것들을 배열로 만들어서 돌려줘"라는 뜻
+	local arrBnPos = for o in arrBn collect o.transform.pos
+	
+	-- tipBn의 pivot은 항상 시작점(Nub 위치)이므로, 곡선용 위치는 직접 계산한 끝점으로 덮어쓴다
+	arrBnPos[arrBnPos.count] = tipPos
+	-- 본 체인 구간별 길이 비율(%) + 전체 길이 계산
+	-- 각 본 하나하나의 실제 길이(근사치)를 구한다
+	-- arrBnPos.count - 1개(=본 개수)만큼의 거리값이 배열에 담깁니다
+	local arrDist = for i = 1 to arrBnPos.count - 1 collect (distance arrBnPos[i] arrBnPos[i+1])
+	-- 거리값들을 다 더해서 체인 전체 길이(root부터 팁 끝까지)를 구합니다
+	local totalLen = 0.0
+	
+	-- 각 관절이 "전체 체인 길이 중 몇 % 지점에 있는가"를 누적으로 계산하는 부분
+	for d in arrDist do totalLen += d
+	-- 루트 관절은 전체 길이의 0% 지점에 있다
+	local arrPercent = #(0.0)
+	-- 루프를 한 바퀴씩 돌려보면
+	for d in arrDist do append arrPercent (arrPercent[arrPercent.count] + d / totalLen)
+	-- 컨트롤/포인트 크기 : 전체 길이에서 자동 계산
+	-- 나중에 수정할거면 할 것
+	local sizeCtrl = totalLen * 0.05
+ 
+	-- 1) 본 위치를 지나는 임시 커브에서 컨트롤 위치 N개를 뽑는다
+	local tmpCrv = SplineShape pos:[0,0,0] wirecolor:black name:"Spline tmp"
+	addNewSpline tmpCrv
+	for p in arrBnPos do addKnot tmpCrv 1 #smooth #curve p
+	updateshape tmpCrv
+ 
+	-- 방금 만든 임시 커브 위에서, numCtrl(기본 5)개의 점을 균등한 간격으로 뽑아내는 부분
+	-- i = 1일 때 0, i = numCtrl일 때 1이 되도록, 그 사이를 numCtrl개로 쪼갠 값을 넣어주는 것
+	-- 넘긴 0 ~ 1 값을 "커브의 실제 물리적 거리(호 길이) 기준 몇 % 지점이냐"로 해석
+	-- MAXScript에서는 정수 ÷ 정수 = 정수라서 소수점 아래가 버려지기에 * 1.0
+	local arrCtrlPos = for i = 1 to numCtrl collect \
+		(interpCurve3D tmpCrv 1 ((i - 1) * 1.0 / (numCtrl - 1)) pathParam:false)
+	-- 더 이상 필요없어진 임시 커브를 씬에서 지워버리기
+	delete tmpCrv
+ 
+	-- 2) 컨트롤 커브 + 컨트롤 생성 후, 커브를 컨트롤에 스킨 바인딩
+	local crvCtrl = SplineShape pos:[0,0,0] wirecolor:orange name:"Spline Curve"
+	addNewSpline crvCtrl
+	for p in arrCtrlPos do addKnot crvCtrl 1 #smooth #curve p
+	updateshape crvCtrl
+	local bindLen = curvelength crvCtrl
+ 
+	local arrCtrl = for i = 1 to numCtrl collect (point size:sizeCtrl pos:arrCtrlPos[i] \
+		wirecolor:yellow cross:off box:on name:("Bip001 Ctr IK" + (formattedPrint i format:"02d")))
+	local caSimple = attributes splineOption
+	(
+		parameters param rollout:roll_ui
+		(
+			stretch type:#float ui:spn_stretch default:1.0
+			offsetV type:#float ui:spn_offset  default:0.0
+		)
+		rollout roll_ui "Simple Spline IK"
+		(
+			spinner spn_stretch "Stretch : " fieldWidth:50 \
+				type:#float range:[0,1,1] scale:.01
+			spinner spn_offset  "Offset  : " fieldWidth:50 \
+				type:#float range:[-100,100,0] scale:.01
+		)
+	)
+	local modiSimple = EmptyModifier name:"SplineOption"
+	custAttributes.add modiSimple caSimple
+	addModifier arrCtrl[1] modiSimple
+	-- bezier_float()가 값을 0으로 리셋하므로 명시적으로 재지정
+	arrCtrl[1].modifiers[#SplineOption].splineOption.stretch.controller = bezier_float()	
+	arrCtrl[1].modifiers[#SplineOption].splineOption.stretch = 1.0
+	arrCtrl[1].modifiers[#SplineOption].splineOption.offsetV.controller = bezier_float()
+	arrCtrl[1].modifiers[#SplineOption].splineOption.offsetV = 0.0
+ 
+	select crvCtrl
+	setCommandPanelTaskMode #modify
+	-- crvCtrl의 모디파이어 스택에 새 Skin 모디파이어를 하나 얹는 명령
+	addModifier crvCtrl (skin())
+	-- 방금 붙인 그 Skin 모디파이어를 다시 꺼내서 skn이라는 변수에 담아두는 것
+	local skn = crvCtrl.modifiers[#skin]
+	-- 지금 Modify 패널이 편집 중인 대상은 이 스킨 모디파이어라고 지정
+	modPanel.setCurrentObject skn
+	-- 컨트롤 하나하나를 스킨의 "영향을 주는 뼈(인플루언스)" 목록에 등록하는 루프
+	for c in arrCtrl do skinOps.addbone skn c -1
+ 
+	-- knot 하나당 3개의 스킨 서브버텍스(in-vec / vertex / out-vec)가 생기는데,
+	-- 블렌딩 없이 knot i를 컨트롤 i에게 100% 준다
+	-- 등록된 인플루언스(컨트롤)들의 번호 목록 #(1, 2, 3, ..., numCtrl)을 만드는 것
+	local allIds = #{1..numCtrl} as array
+	for i = 1 to numCtrl do
+	(
+		-- [0.0, 0.0, ..., 0.0] (길이 numCtrl) 배열을 만들고
+		local w = for j = 1 to numCtrl collect 0.0
+		-- 이 버텍스는 i번 컨트롤한테서 100%, 나머지 컨트롤한테서는 0% 영향
+		w[i] = 1.0
+		-- 앞서 knot 하나당 버텍스 3개라고 했으니,
+		-- i번째 knot의 in-vec/vertex/out-vec 버텍스 번호가 정확히 이 세 값
+		skinOps.SetVertexWeights skn (3*i - 2) allIds w
+		skinOps.SetVertexWeights skn (3*i - 1) allIds w
+		skinOps.SetVertexWeights skn (3*i) allIds w
+	)
+	clearSelection()
+	-- 커맨드 패널을 다시 원래(Create) 탭으로 돌려놓기
+	setCommandPanelTaskMode #create
+ 
+	-- 3) 포인트 헬퍼 : 위에서 구한 본 길이 비율(arrPercent)대로 컨트롤 커브에 붙인다
+	-- 본 개수(팁 본 포함)만큼 반복하면서, 매번 만든 결과를 모아 arrPt라는 배열을 만드는 것
+	local arrPt = for i = 1 to arrBn.count collect
+	(
+		local pt = point size:(sizeCtrl * .3) wirecolor:red cross:off box:on \
+			name:("Spline Pt " + (formattedPrint i format:"02d"))
+		local pconst = pt.pos.controller = Path_Constraint \
+			path:crvCtrl percent:(arrPercent[i] * 100.0) loop:false
+		
+		-- 포인트가 커브 위 몇 %에 있어야 하는지를 v라는 변수에 저장
+		local v = arrPercent[i]
+		local pctCtr = pconst.percent.controller = float_script()
+		-- crv라는 이름으로 crvCtrl(컨트롤 커브)을 참조할 수 있게 등록
+		pctCtr.addNode "crv" crvCtrl
+		pctCtr.addTarget "stretch" arrCtrl[1].modifiers[#SplineOption].splineOption[#stretch]
+		pctCtr.addTarget "offsetV" arrCtrl[1].modifiers[#SplineOption].splineOption[#offsetV]
+		
+		pctCtr.addConstant "bindLen" bindLen
+		-- 이 포인트가 원래 있어야 할 위치, %
+		-- v : 스트레치 ON일 때의 위치
+		
+		pctCtr.addConstant "v" v
+		-- r : 원래 길이 / 현재 길이 (커브가 늘어나면 &lt; 1, 줄어들면 &gt; 1)
+		-- vf : 커브 길이가 변해도 root부터의 실제 거리를 유지하려면 몇 % 지점이어야 하는지
+		-- vf - v : 두 위치 사이의 차이(보정량)
+		-- 결과: stretch = 1이면 v (커브 따라 늘어남), stretch = 0이면 vf (거리 유지)
+		-- 오프셋: offsetV%를 원래 길이 기준 거리로 환산해 앞/뒤로 밀어줌
+		
+		pctCtr.script = "r = bindLen / (curvelength crv)\n" + \
+			"vf = v * r\n" + \
+			"v + (vf - v) * (1 - stretch) + (offsetV / 100.0) * r"
+
+		-- 결국 arrPt 배열에 담기는 건 pt 오브젝트 자체
+		pt
+	)
+ 
+	-- 4) 본 -&gt; 포인트 : Position Constraint
+	for i = 1 to arrBn.count do
+	(
+		-- 본 하나마다 새 Position Constraint를 만들어서 그 본의 위치 컨트롤러로 끼워넣는다
+		local ctr = arrBn[i].pos.controller = Position_Constraint()
+		-- 방금 만든 컨스트레인트에 "arrPt[i]를 100% 가중치로 따라가라"는 타겟을 추가
+		ctr.appendTarget arrPt[i] 100.0
+	)
+ 
+	-- 5) 본 회전 : 다음 포인트를 바라봄 (LookAt Constraint)
+	-- 마지막(팁) 본은 목표가 없으므로 바로 앞 본의 방향을 그대로
+	for i = 1 to arrBn.count - 1 do
+	(
+		-- LookAt_Constraint를 만들어서 그 본의 회전 컨트롤러로 끼워넣는다
+		-- 이 본의 로컬 X축을 타겟 쪽으로 향하게 하라
+		local ctr = arrBn[i].rotation.controller = LookAt_Constraint target_axis:0 \
+			target_axisFlip:false upnode_world:false
+		-- 자기 자신이 붙어있는 포인트(arrPt[i])를 업노드로 쓴다
+		ctr.pickUpNode = arrPt[i]
+		-- 이 기준은 세팅할 때마다 수정하기
+		ctr.upnode_ctrl = 2
+		ctr.upnode_axis = 2
+		ctr.StoUP_axis = 0
+		-- i + 1번째 포인트(=다음 관절 위치)를 100% 가중치로 바라보게 등록
+		ctr.appendTarget arrPt[i+1] 100.0
+		ctr.relative = false
+	)
+	-- 팁 본만 따로 처리하는 부분
+	local ctrLast = arrBn[arrBn.count].rotation.controller = Orientation_Constraint()
+	ctrLast.appendTarget arrBn[arrBn.count - 1] 100.0
+	ctrLast.relative = false
+ 
+	select arrCtrl
+	-- 가비지 컬렉터를 가볍게 한 번 돌림
+	-- 오브젝트를 많이 생성/삭제하는 스크립트 끝에 흔히 붙이는 관용적인 코드
+	gc light:true
+ 
+	messageBox ("Simple Spline IK Complete\n\nController : " + numCtrl as string + \
+	"\nBone : " + (arrBn.count - 1) as string) title:"Simple Spline IK"
+)</pre>
       </div>
 
       <div class="actions" style="display: flex; gap: 14px; margin-top: 44px;">
